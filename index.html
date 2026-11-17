@@ -1,0 +1,546 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Newspaper Translation Challenge</title>
+<style>
+:root{--bg:#faf6fb;--card:#fff;--ink:#2d1a33;--mut:#6f5a78;--pri:#7b2d8e;--pri2:#f3e4f7;--ok:#1f9d55;--bad:#d64545;--bd:#e3d3e8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1220;--card:#2a1c31;--ink:#f5e9f8;--mut:#c4aacd;--pri:#c77ddb;--pri2:#3b2646;--bd:#4b3556;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1220;--card:#2a1c31;--ink:#f5e9f8;--mut:#c4aacd;--pri:#c77ddb;--pri2:#3b2646;--bd:#4b3556;color-scheme:dark}
+html{height:100%}
+body{margin:0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI","Noto Sans Thai",sans-serif}
+#hb{flex:none;max-width:900px;width:100%;margin:0 auto;padding:6px 10px 0;box-sizing:border-box;display:none}
+#app{flex:1;min-height:0;width:100%;max-width:900px;margin:0 auto;padding:8px 10px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden}
+#app.sc{display:block;overflow:auto}
+h1{font-size:clamp(20px,4.5vh,32px);margin:4px 0;color:var(--pri)}
+p{margin:4px 0}
+.card{background:var(--card);border:2px solid var(--bd);border-radius:16px;padding:12px;margin:6px 0}
+.card.g{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;overflow:auto}
+.card.g.c{justify-content:center;align-items:center}
+.mid{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:8px;overflow:auto}
+.act{flex:none;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px}
+.teams{flex:none;display:flex;gap:6px;flex-wrap:wrap}
+.team{flex:1;min-width:90px;background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:3px 6px;text-align:center;font-size:14px;line-height:1.25}
+.team.cur{border-color:var(--pri);background:var(--pri2)}.team.out{opacity:.45}
+.team b{display:block}.hearts{font-size:14px}
+button{font:inherit;font-size:16px;font-weight:700;border:0;border-radius:10px;padding:8px 14px;background:var(--pri);color:#fff;cursor:pointer;margin:3px}
+button.alt{background:var(--pri2);color:var(--pri)}button.ok{background:var(--ok)}button.bad{background:var(--bad)}
+button:disabled{opacity:.4;cursor:default}
+.big{font-size:clamp(18px,4vh,32px);font-weight:700;line-height:1.3}
+.pic{font-size:clamp(48px,17vh,110px);line-height:1.1;text-align:center}
+.slot{min-height:44px;border:2px dashed var(--bd);border-radius:12px;padding:6px;display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.tiles{display:flex;flex-wrap:wrap;gap:5px}
+.tile{background:var(--pri2);color:var(--ink);border:2px solid var(--pri);padding:5px 11px;font-size:clamp(15px,2.6vh,19px);margin:0}
+.msg{font-size:clamp(15px,2.6vh,19px);font-weight:700;padding:6px 10px;border-radius:10px;margin:0}
+.msg.g{background:#d9f5e3;color:#14663a}.msg.r{background:#fde0e0;color:#8f2323}
+.mut{color:var(--mut)}.sm{font-size:13px}
+input,select{font:inherit;padding:8px;border-radius:10px;border:2px solid var(--bd);background:var(--card);color:var(--ink);margin:3px;width:min(260px,90%)}
+.names input{width:130px}
+.c{text-align:center}
+</style>
+</head>
+<body>
+<div id="hb">
+<button id="hbb" class="alt" onclick="goHome()">🏠 Home</button>
+<button id="nxb" class="alt" onclick="skipRound()">⏭ Next round</button>
+</div>
+<div id="app"></div>
+
+<script>
+/* ===== EDIT CONTENT HERE ===== */
+// [English answer, emoji, clue]
+const R1=[
+["headline","📰","The title of a news story, in big letters."],
+["reporter","🎤","A person who collects and writes news."],
+["witness","👀","A person who sees an event happen."],
+["breaking news","🚨","News about something that just happened."],
+["second-hand","♻️","Used by another person before."],
+["for rent","🏠","You pay money each month to use it."],
+["deposit","💰","Money paid first to keep a room."],
+["reward","🎁","Money for returning a lost item."],
+["vacancy","📋","A job that is open and needs a person."],
+["applicant","🙋","A person who applies for a job."],
+["interview","🤝","A meeting where an employer asks questions."],
+["salary","💵","Money you get each month for work."],
+["weather forecast","🌦️","A report of what the weather will be."],
+["thunderstorm","⛈️","Storm with thunder, lightning and heavy rain."],
+["flood","🌊","Too much water on normally dry land."],
+["humid","💦","Hot and wet air."]];
+
+// [Thai, English answer, extra distractor words]
+const R2=[
+["พาดหัวข่าวอยู่บนหน้าหนึ่ง","The headline is on the front page.",["a","are"]],
+["ผู้สื่อข่าวเขียนข่าว","A reporter wrote the article.",["write","an"]],
+["คุณอ่านหนังสือพิมพ์ทุกวันไหม","Do you read the newspaper every day?",["Are","reads"]],
+["ห้องนี้ให้เช่า","The room is for rent.",["sale","are"]],
+["ราคาต่อรองได้","The price is negotiable.",["a","are"]],
+["ใหม่เอี่ยมไหม","Is it brand new?",["Are","second-hand"]],
+["ฉันอยากสมัครตำแหน่งนี้","I would like to apply for the position.",["applies","a"]],
+["บริษัทมีตำแหน่งงานว่าง","The company has a vacancy.",["have","an"]],
+["เงินเดือนเท่าไหร่","What is the salary?",["Where","a"]],
+["อากาศจะแดดจัดและชื้น","It will be sunny and humid.",["is","cloudy"]],
+["มีโอกาสฝนตก 70%","There is a 70% chance of rain.",["are","an"]],
+["อย่าลืมร่มของคุณ","Don't forget your umbrella.",["Do","my"]]];
+
+const R3=[
+["ย่อหน้าเปิดข่าวบอกว่าใคร อะไร ที่ไหน และเมื่อไร","The lead tells us who, what, where and when.",["why","says"]],
+["ผู้สื่อข่าวสัมภาษณ์พยานหลังเกิดอุบัติเหตุ","A reporter interviewed the witness after the accident.",["before","an"]],
+["ห้องมีเฟอร์นิเจอร์และมีแอร์","The room is furnished and has A/C.",["for","have"]],
+["ฉันโทรมาเรื่องจักรยานในหนังสือพิมพ์","I'm calling about the bicycle in the newspaper.",["call","a"]],
+["กรุณาส่งประวัติย่อและจดหมายสมัครงานก่อนกำหนดส่ง","Please send your resume and cover letter before the deadline.",["after","my"]],
+["ฉันมีประสบการณ์ที่ร้านกาแฟหนึ่งปี","I have one year of experience in a coffee shop.",["has","two"]],
+["พายุโซนร้อนกำลังมาจากทะเล","A tropical storm is coming from the sea.",["are","going"]],
+["เราคาดว่าจะมีฝนตกปรอยๆ ในภาคเหนือพรุ่งนี้","We expect scattered showers in the north tomorrow.",["expects","south"]]];
+
+/* ===== GAME ENGINE ===== */
+const ROUNDS=[
+{n:1,title:"Guess the Word",pts:1,items:R1},
+{n:2,title:"Thai → English",pts:1,items:R2},
+{n:3,title:"Challenger Round",pts:2,items:R3}];
+
+const LIVES=3;
+let T=[],rd=0,i=0,c=0,ph="setup",fb=null,pick=[],tiles=[],revealed=false,count=3,names=[];
+
+const $=s=>document.getElementById("app");
+const norm=s=>s.toLowerCase().replace(/[’'.,?!]/g,"").replace(/\s+/g," ").trim();
+
+const shuf=a=>{
+a=a.slice();
+for(let k=a.length-1;k>0;k--){
+const j=Math.floor(Math.random()*(k+1));
+[a[k],a[j]]=[a[j],a[k]];
+}
+return a;
+};
+
+function speak(t){
+try{
+speechSynthesis.cancel();
+const u=new SpeechSynthesisUtterance(t);
+u.lang="th-TH";
+u.rate=.85;
+speechSynthesis.speak(u);
+}catch(e){}
+}
+
+function bar(){
+return '<div class="teams">'+T.map((t,k)=>
+`<div class="team ${k==c&&ph=="play"?"cur":""} ${t.lives<1?"out":""}" style="cursor:pointer" onclick="sel(${k})">
+<b>${t.name}</b>
+<span class="hearts">${"❤️".repeat(t.lives)}${"🖤".repeat(LIVES-t.lives)}</span> ⭐ ${t.score}
+</div>`).join("")+"</div>";
+}
+
+function setup(){
+ph="setup";
+names=names.length?names:Array.from({length:count},(_,k)=>"Group "+(k+1));
+while(names.length<count)names.push("Group "+(names.length+1));
+names.length=count;
+
+$().innerHTML=`<h1>${TITLE}</h1>
+<p class="mut sm">Kru Kristel · M.3 Unit 1: Newspaper · 3 rounds · 3 lives per round</p>
+<div class="card">
+<b>How many groups?</b><br>
+${[2,3,4,5,6].map(n=>`<button class="${n==count?"":"alt"}" onclick="count=${n};setup()">${n}</button>`).join("")}
+<div class="names">${names.map((n,k)=>`<input value="${n}" onchange="names[${k}]=this.value" aria-label="Group name">`).join("")}</div>
+<button onclick="startGame()">Start Game ▶</button><br>
+<button class="alt" onclick="studio()">🎙 Audio studio (use your own voice)</button>
+<button class="alt" onclick="editor()">✏️ Edit game content</button>
+</div>`;
+}
+
+function startGame(){
+T=names.map(n=>({name:n||"Group",score:0,lives:LIVES}));
+rd=0;
+intro();
+}
+
+function intro(){
+T.forEach(t=>t.lives=LIVES);
+ph="intro";
+const r=ROUNDS[rd];
+$().innerHTML=bar()+`<div class="card g c">
+<h1>Round ${r.n}</h1>
+<div class="big">${r.title}</div>
+<p class="mut">${r.n==1?"Read the clue. Guess the newspaper word. Then reveal the picture!":r.n==2?"Listen to the Thai sentence and build it in English.":"Harder, longer sentences! Each correct answer is worth 2 points."}</p>
+<p>❤️❤️❤️ Everyone starts with 3 lives. A wrong answer costs 1 life.</p>
+<button onclick="startRound()">Go! ▶</button>
+</div>`;
+}
+
+function startRound(){
+i=0;
+show();
+}
+
+function show(){
+ph="play";
+c=-1;
+fb=null;
+revealed=false;
+pick=[];
+const r=ROUNDS[rd],it=r.items[i];
+if(r.n>1)tiles=shuf(it[1].replace(/[.?!]$/,"").split(" ").concat(it[2])).map((w,k)=>({w,k}));
+render();
+if(r.n>1)setTimeout(()=>play(r.n+"-"+i),300);
+}
+
+function render(){
+const r=ROUNDS[rd],it=r.items[i],t=T[c]||null;
+let h=bar()+`<div class="card g">
+<div class="mut sm">Round ${r.n}: ${r.title} · Item ${i+1}/${r.items.length} ${t?`· <b>${t.name}</b>’s turn`:"· 👆 Tap a group to choose who answers"}</div>
+<div class="mid">`;
+
+if(r.n==1){
+h+=`<div class="big c">${it[2]}</div>
+<div class="pic">${revealed?(imgURL(it[0])?`<img src="${imgURL(it[0])}" style="max-height:20vh;max-width:100%;border-radius:16px">`:it[1]):"❓"}</div>
+${revealed?`<div class="big c">${it[0]}</div>`:""}</div><div class="act">`;
+if(!revealed)h+=`<button onclick="revealed=true;render()">👀 Reveal the picture</button>`;
+else if(!fb)h+=`<button class="ok" ${c<0?"disabled":""} onclick="mark(true)">✔ Correct</button><button class="bad" ${c<0?"disabled":""} onclick="mark(false)">✘ Wrong</button>`;
+}
+else{
+h+=`<div class="big c">${it[0]}</div>
+<div class="c"><button class="alt" onclick="play('${r.n}-${i}')">🔊 Play audio${AU[r.n+"-"+i]?" (my recording)":""}</button>
+<span class="mut sm"> (if silent, read it aloud)</span></div>
+<div class="slot">${pick.map(k=>`<button class="tile" ${fb?"disabled":`onclick="unpick(${k})"`}>${tiles[k].w}</button>`).join("")}</div>
+<div class="tiles">${tiles.map((x,k)=>pick.includes(k)?"":`<button class="tile" ${fb?"disabled":`onclick="pick.push(${k});render()"`}>${x.w}</button>`).join("")}</div></div><div class="act">
+${fb?"":`<button onclick="check()" ${pick.length&&c>=0?"":"disabled"}>Check ✔</button><button class="alt" onclick="pick=[];render()">Clear</button>`}`;
+}
+
+if(fb)h+=`<div class="msg ${fb.ok?"g":"r"}">${fb.msg}</div><button onclick="advance()">Next ▶</button>`;
+$().innerHTML=h+"</div></div>";
+}
+
+function unpick(k){
+pick=pick.filter(x=>x!=k);
+render();
+}
+
+function check(){
+const it=ROUNDS[rd].items[i];
+mark(norm(pick.map(k=>tiles[k].w).join(" "))==norm(it[1]),it[1]);
+}
+
+function mark(ok,ans){
+if(c<0)return;
+const t=T[c],p=ROUNDS[rd].pts;
+if(ok)t.score+=p;
+else t.lives--;
+fb={ok,msg:ok?`🎉 Correct! +${p} point${p>1?"s":""}`:`❌ Not quite. −1 life.${ans?" Answer: "+ans:""}${t.lives<1?" "+t.name+" is out for this round.":""}`};
+render();
+}
+
+function advance(){
+i++;
+if(i>=ROUNDS[rd].items.length||!T.some(t=>t.lives>0))return roundEnd();
+show();
+}
+
+function roundEnd(){
+ph="end";
+const last=rd==2;
+const mx=Math.max(...T.map(t=>t.score));
+$().innerHTML=bar()+`<div class="card g c">
+<h1>${last?"🏆 Game Over!":"Round "+ROUNDS[rd].n+" complete"}</h1>
+${last?`<div class="big">Winner: ${T.filter(t=>t.score==mx).map(t=>t.name).join(" & ")} with ${mx} ⭐</div>`:`<p>Lives reset for the next round!</p>`}
+<button onclick="${last?"names=names;setup()":"rd++;intro()"}">${last?"Play again":"Next round ▶"}</button>
+</div>`;
+}
+
+let AU={},DB=null,rec=null,recKey=null,chunks=[],cur=null;
+
+function idb(){
+return new Promise(r=>{
+try{
+const q=indexedDB.open("kk-newspaper-audio",1);
+q.onupgradeneeded=()=>q.result.createObjectStore("a");
+q.onsuccess=()=>r(q.result);
+q.onerror=()=>r(null);
+}catch(e){r(null)}
+});
+}
+
+async function loadAU(){
+DB=await idb();
+if(!DB)return;
+await new Promise(res=>{
+try{
+const q=DB.transaction("a").objectStore("a").openCursor();
+q.onsuccess=()=>{
+const u=q.result;
+if(u){AU[u.key]=u.value;u.continue();}
+else res();
+};
+q.onerror=()=>res();
+}catch(e){res();}
+});
+}
+
+function saveAU(k,b){
+AU[k]=b;
+try{DB&&DB.transaction("a","readwrite").objectStore("a").put(b,k)}catch(e){}
+}
+
+function delAU(k){
+delete AU[k];
+try{DB&&DB.transaction("a","readwrite").objectStore("a").delete(k)}catch(e){}
+}
+
+function play(k){
+const[a,b]=k.split("-");
+try{speechSynthesis.cancel()}catch(e){}
+if(cur)cur.pause();
+if(AU[k]){
+cur=new Audio(URL.createObjectURL(AU[k]));
+cur.play().catch(()=>{});
+}else speak(ROUNDS[a-1].items[b][0]);
+}
+
+function sel(k){
+if(ph!="play"||fb||T[k].lives<1)return;
+c=k;
+render();
+}
+
+let recMsg="";
+const MICM="⚠️ The microphone can’t be used on this page (it may be blocked in this view). Record with your phone’s voice recorder app, then tap 📁 to upload each audio file.";
+
+async function toggleRec(k){
+if(!navigator.mediaDevices||!window.MediaRecorder){recMsg=MICM;studio();return}
+if(rec&&rec.state=="recording"){rec.stop();return}
+try{
+recMsg="";
+const st=await navigator.mediaDevices.getUserMedia({audio:true});
+chunks=[];
+rec=new MediaRecorder(st);
+recKey=k;
+rec.ondataavailable=e=>chunks.push(e.data);
+rec.onstop=()=>{
+st.getTracks().forEach(t=>t.stop());
+saveAU(k,new Blob(chunks,{type:rec.mimeType||"audio/webm"}));
+recKey=null;
+studio();
+};
+rec.start();
+studio();
+}catch(e){recMsg=MICM;studio()}
+}
+
+function up(k,el){
+if(el.files[0]){saveAU(k,el.files[0]);studio()}
+}
+
+function studio(){
+ph="studio";
+let h='<h1>🎙 Audio Studio</h1><p class="mut">Record your voice (● Record, then ■ Stop) or upload an audio file for each sentence. Items without a recording use the computer’s Thai voice. Recordings stay on this device and browser.</p><button class="alt" onclick="setup()">← Back to setup</button>'+(recMsg?'<div class="msg r">'+recMsg+'</div>':"");
+
+ROUNDS.slice(1).forEach(r=>{
+h+=`<div class="card"><b>Round ${r.n}: ${r.title}</b>`;
+r.items.forEach((it,k)=>{
+const key=r.n+"-"+k,on=recKey==key;
+h+=`<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--bd);padding:6px 0">
+<div style="flex:1;min-width:200px">${k+1}. ${it[0]} ${AU[key]?"✅":""}</div>
+<button class="${on?"bad":""}" onclick="toggleRec('${key}')">${on?"■ Stop":"● Record"}</button>
+<button class="alt" onclick="play('${key}')">▶</button>
+<button class="alt" onclick="this.nextElementSibling.click()">📁</button>
+<input type="file" accept="audio/*" hidden onchange="up('${key}',this)">
+<button class="alt" onclick="delAU('${key}');studio()">🗑</button>
+</div>`;
+});
+h+="</div>";
+});
+$().innerHTML=h;
+}
+
+let TITLE="Newspaper Translation Challenge";
+const LS="kk-newspaper-content";
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+function applyC(c){
+TITLE=c.title;
+ROUNDS[0].title=c.r1t;
+ROUNDS[0].items=c.r1;
+ROUNDS[1].items=c.r2;
+ROUNDS[2].items=c.r3;
+document.title=TITLE;
+}
+
+function curC(){
+return{title:TITLE,r1t:ROUNDS[0].title,r1:ROUNDS[0].items,r2:ROUNDS[1].items,r3:ROUNDS[2].items};
+}
+
+const DEF=JSON.parse(JSON.stringify(curC()));
+
+try{
+const x=localStorage.getItem(LS);
+if(x)applyC(JSON.parse(x));
+}catch(e){}
+
+function setC(c){
+[[2,"r2"],[3,"r3"]].forEach(([n,k])=>
+ROUNDS[n-1].items.forEach((it,j)=>{
+if(!c[k][j]||c[k][j][0]!==it[0])delAU(n+"-"+j);
+}));
+applyC(c);
+try{localStorage.setItem(LS,JSON.stringify(curC()))}catch(e){}
+}
+
+function resetC(){
+setC(JSON.parse(JSON.stringify(DEF)));
+try{localStorage.removeItem(LS)}catch(e){}
+setup();
+}
+
+const TA='style="width:100%;box-sizing:border-box;font:inherit;padding:10px;border-radius:10px;border:2px solid var(--bd);background:var(--card);color:var(--ink)"';
+
+function editor(){
+ph="editor";
+const L=(a,f)=>esc(a.map(f).join("\n")),q=x=>x[0]+" | "+x[1]+" | "+x[2].join(", ");
+
+$().innerHTML=`<h1>✏️ Edit game content</h1>
+<p class="mut">Change the lesson here, then press Save. One item per line, parts separated by | . Saved in this browser.</p>
+<button class="alt" onclick="setup()">← Back</button>
+<div class="card"><b>Game title</b><br>
+<input id="e0" style="width:95%" value="${esc(TITLE)}"><br>
+<b>Round 1 name</b><br>
+<input id="e1" style="width:95%" value="${esc(ROUNDS[0].title)}"></div>
+<div class="card"><b>Round 1: answer | emoji picture | clue</b>
+<textarea id="e2" rows="14" ${TA}>${L(ROUNDS[0].items,x=>x.join(" | "))}</textarea></div>
+<div class="card"><b>Round 1 pictures</b>
+<p class="mut">Upload your own picture for each item (it replaces the emoji). Save any text changes above first, then upload.</p>
+${ROUNDS[0].items.map((x,j)=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--bd);padding:6px 0">
+<span id="th${j}" style="width:60px;text-align:center">${thumbJ(j)}</span>
+<span style="flex:1;min-width:100px">${esc(x[0])}</span>
+<button class="alt" onclick="this.nextElementSibling.click()">📁 Upload</button>
+<input type="file" accept="image/*" hidden onchange="imgUp(${j},this)">
+<button class="alt" onclick="imgDel(${j})">🗑</button>
+</div>`).join("")}</div>
+<div class="card"><b>Round 2: Thai sentence | English answer | extra wrong words (comma-separated)</b>
+<textarea id="e3" rows="10" ${TA}>${L(ROUNDS[1].items,q)}</textarea></div>
+<div class="card"><b>Round 3 (same format, 2 points each)</b>
+<textarea id="e4" rows="10" ${TA}>${L(ROUNDS[2].items,q)}</textarea></div>
+<div id="em" class="msg r" style="display:none"></div>
+<button onclick="saveEd()">💾 Save</button>
+<button class="alt" onclick="resetC()">Reset to Newspaper lesson</button>
+<p class="mut">Tip: if you change a Thai sentence, its recorded audio is removed so the old recording doesn’t play by mistake.</p>`;
+}
+
+function saveEd(){
+const g=id=>document.getElementById(id).value,
+ln=v=>v.split("\n").map(x=>x.trim()).filter(Boolean).map(x=>x.split("|").map(y=>y.trim())),
+tr=v=>ln(v).map(p=>[p[0],p[1],(p[2]||"").split(",").map(z=>z.trim()).filter(Boolean)]);
+
+const r1=ln(g("e2")),r2=tr(g("e3")),r3=tr(g("e4")),em=document.getElementById("em");
+let bad="";
+
+if(!r1.length||r1.some(p=>p.length<3||!p[0]||!p[1]||!p[2]))
+bad="Round 1: every line needs answer | emoji | clue.";
+else if(!r2.length||r2.some(p=>!p[0]||!p[1]))
+bad="Round 2: every line needs Thai | English.";
+else if(!r3.length||r3.some(p=>!p[0]||!p[1]))
+bad="Round 3: every line needs Thai | English.";
+
+if(bad){em.textContent=bad;em.style.display="block";return}
+
+setC({title:g("e0").trim()||TITLE,r1t:g("e1").trim()||"Round 1",r1,r2,r3});
+setup();
+}
+
+let nxT=null;
+
+function skipRound(){
+const b=document.getElementById("nxb");
+if(b.dataset.s){
+clearTimeout(nxT);
+b.dataset.s="";
+try{speechSynthesis.cancel()}catch(e){}
+if(cur)cur.pause();
+if(rd<2){rd++;intro()}else roundEnd();
+return;
+}
+b.dataset.s="1";
+b.textContent="Tap again to confirm";
+nxT=setTimeout(()=>{
+b.dataset.s="";
+b.textContent=rd<2?"⏭ Next round":"🏁 Finish game";
+},3000);
+}
+
+const ik=a=>"i-"+String(a).trim().toLowerCase(),IU={};
+
+function imgURL(a){
+const k=ik(a);
+if(!AU[k])return null;
+return IU[k]||(IU[k]=URL.createObjectURL(AU[k]));
+}
+
+const thumbJ=j=>{
+const a=ROUNDS[0].items[j][0],u=imgURL(a);
+return u?`<img src="${u}" style="width:56px;height:56px;object-fit:cover;border-radius:10px">`:`<span style="font-size:36px">${ROUNDS[0].items[j][1]}</span>`;
+};
+
+function imgUp(j,el){
+const f=el.files[0];
+if(!f)return;
+const a=ROUNDS[0].items[j][0],im=new Image(),u=URL.createObjectURL(f);
+im.onload=()=>{
+const m=Math.min(1,600/Math.max(im.width,im.height)),
+cv=document.createElement("canvas");
+cv.width=Math.round(im.width*m);
+cv.height=Math.round(im.height*m);
+cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
+cv.toBlob(b=>{
+const k=ik(a);
+delete IU[k];
+saveAU(k,b);
+document.getElementById("th"+j).innerHTML=thumbJ(j);
+},f.type=="image/png"?"image/png":"image/jpeg",.85);
+URL.revokeObjectURL(u);
+};
+im.onerror=()=>{};
+im.src=u;
+}
+
+function imgDel(j){
+const k=ik(ROUNDS[0].items[j][0]);
+delete IU[k];
+delAU(k);
+document.getElementById("th"+j).innerHTML=thumbJ(j);
+}
+
+let hbT=null;
+
+function goHome(){
+const b=document.getElementById("hbb");
+if(b.dataset.s){
+clearTimeout(hbT);
+b.dataset.s="";
+b.textContent="🏠 Home";
+try{speechSynthesis.cancel()}catch(e){}
+if(cur)cur.pause();
+setup();
+return;
+}
+b.dataset.s="1";
+b.textContent="Tap again to leave (scores reset)";
+hbT=setTimeout(()=>{
+b.dataset.s="";
+b.textContent="🏠 Home";
+},3000);
+}
+
+new MutationObserver(()=>{
+const a=document.getElementById("app");
+a.className=(ph=="studio"||ph=="editor")?"sc":"";
+document.getElementById("hb").style.display=(ph=="setup"||ph=="studio"||ph=="editor")?"none":"block";
+const n=document.getElementById("nxb");
+n.style.display=(ph=="play"||ph=="intro")?"inline-block":"none";
+if(!n.dataset.s)n.textContent=rd<2?"⏭ Next round":"🏁 Finish game";
+}).observe(document.getElementById("app"),{childList:true});
+
+loadAU().finally(setup);
+</script>
+</body>
+</html>
